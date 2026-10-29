@@ -421,42 +421,243 @@ window.SA_MODULES = [
   },
   {
     id: "values-in-action",
-    status: "coming",
+    status: "active",
     number: "06",
     title: "Values in Action",
     subtitle: "Do my choices match what I say matters?",
-    summary: "Audit a month of calendar time and spending against the values you named in Future."
+    time: "About 1 to 2 hours, plus one typical week of notes",
+    intro: "Your values only mean something if your calendar and your money reflect them. This module takes a typical week and asks where your hours and dollars actually go, and which of your five values each activity serves.",
+    note: "Start with your five values from Future Self. Be honest about a typical week, not the one you wish you had.",
+    sections: [
+      {
+        id: "audit",
+        kind: "rows",
+        title: "Where my time and money go",
+        prompt: "List the main activities in a typical week. For each, estimate hours per week and monthly spending, then tag the value it serves.",
+        help: "Rough numbers are fine. The pattern matters more than precision. Tag each activity with the one value it serves most, or with \"No value\" if it serves none.",
+        columns: [
+          { key: "name", label: "Activity", type: "text", placeholder: "e.g. Work, gym, scrolling" },
+          { key: "hours", label: "Hours a week", type: "number", min: 0, max: 168 },
+          { key: "spend", label: "Dollars a month", type: "number", min: 0 },
+          { key: "value", label: "Value it serves", type: "select", optionsFrom: "future/values", none: "No value" }
+        ],
+        minRows: 3,
+        maxRows: 25,
+        addLabel: "Add an activity",
+        summary: "valueTime"
+      },
+      {
+        id: "gaps",
+        kind: "text",
+        title: "The value with the least behind it",
+        prompt: "Which of your five values has the least time or money behind it this week?",
+        help: "Name it plainly. A value you rarely act on is not a failing. It is information."
+      },
+      {
+        id: "mismatch",
+        kind: "text",
+        title: "Time that serves nothing",
+        prompt: "Which activity takes many hours and serves no value you named? What would it take to change it this month?"
+      },
+      {
+        id: "one_change",
+        kind: "text",
+        title: "One change this week",
+        prompt: "Choose one change that would move your time or money toward a value. Give it a day and a time."
+      }
+    ]
   },
   {
     id: "relationships",
-    status: "coming",
+    status: "active",
     number: "07",
     title: "Relationship Ledger",
     subtitle: "Who gives me energy, and who do I give it to?",
-    summary: "Map energy in and out across the people in your life, with one next move for each."
+    time: "About 1 hour",
+    intro: "Relationships change us in both directions. This module lists the people who matter, rates the energy each one gives you and costs you, and asks for one concrete next move with each.",
+    note: "Keep this private and honest. Nobody else needs to read these ratings to benefit from your change in behavior.",
+    sections: [
+      {
+        id: "people",
+        kind: "rows",
+        title: "The people who matter most",
+        prompt: "List the people who most affect your days. Rate each from 1 (very little) to 5 (a great deal) for the energy they give you and the energy they cost you.",
+        columns: [
+          { key: "name", label: "Person", type: "text", placeholder: "First name or role" },
+          { key: "gives", label: "Energy they give me", type: "select", options: ["1", "2", "3", "4", "5"] },
+          { key: "costs", label: "Energy they cost me", type: "select", options: ["1", "2", "3", "4", "5"] },
+          { key: "next", label: "Next move", type: "text", placeholder: "One concrete step" }
+        ],
+        minRows: 3,
+        maxRows: 20,
+        addLabel: "Add a person",
+        summary: "ledgerNet"
+      },
+      {
+        id: "shifts",
+        kind: "text",
+        title: "What has shifted",
+        prompt: "Which relationship has changed most in the past year? What did you learn about yourself from the change?"
+      },
+      {
+        id: "boundary",
+        kind: "text",
+        title: "A boundary that needs saying",
+        prompt: "Which relationship needs a boundary? Write the sentence you would say, in plain words.",
+        help: "A boundary states what you will do, not what the other person must do."
+      },
+      {
+        id: "invest",
+        kind: "text",
+        title: "Where to invest",
+        prompt: "Which relationship would you like more of this month? Name one shared activity and a day for it."
+      }
+    ]
   },
   {
     id: "habit-lab",
-    status: "coming",
+    status: "active",
     number: "08",
     title: "Habit Lab",
     subtitle: "Run small experiments and read the results honestly",
-    summary: "Design two-week behavioral experiments, then judge them against what you wrote beforehand."
+    time: "Two weeks of daily notes, then one review",
+    intro: "Most habit advice is untested. Here you choose one or two small changes, predict the result in writing, and count the days you actually kept them. The count tells you what happened, whatever you hoped would happen.",
+    note: "Write your prediction before you start. The point is to notice the gap between what you expect and what occurs.",
+    sections: [
+      {
+        id: "experiments",
+        kind: "rows",
+        title: "My experiments",
+        prompt: "Choose up to five small habits to test for two weeks. For each, write what you predict will happen, then record the days you kept it out of 14.",
+        columns: [
+          { key: "habit", label: "Habit to test", type: "text", placeholder: "e.g. Walk after dinner" },
+          { key: "prediction", label: "What I predict", type: "text", placeholder: "Write it before you start" },
+          { key: "days", label: "Days kept (of 14)", type: "number", min: 0, max: 14 },
+          { key: "verdict", label: "Verdict", type: "select", options: ["Keep it", "Adjust it", "Drop it"] }
+        ],
+        minRows: 1,
+        maxRows: 5,
+        addLabel: "Add an experiment",
+        summary: "habitLab"
+      },
+      {
+        id: "surprise",
+        kind: "text",
+        title: "What surprised me",
+        prompt: "Looking at your results, what did you learn that you did not expect? Compare it with your prediction."
+      },
+      {
+        id: "adjust",
+        kind: "text",
+        title: "What I will adjust",
+        prompt: "For any habit you marked Adjust, what one change would make it easier to keep?"
+      },
+      {
+        id: "next",
+        kind: "text",
+        title: "The next experiment",
+        prompt: "Name the single experiment you will run next, and the day you will start it."
+      }
+    ]
   },
   {
     id: "meaning-calling",
-    status: "coming",
+    status: "active",
     number: "09",
     title: "Meaning and Calling",
     subtitle: "What am I for?",
-    summary: "A longer inquiry into purpose, service, and what you would still do if nobody were watching."
+    time: "Several weeks of short sessions",
+    intro: "This is a slower inquiry into purpose. It asks what you would do with your life if nobody were watching, and how your gifts might serve people beyond yourself.",
+    note: "Work on one question per sitting, and let the answers sit for a day before you revise them. Purpose tends to clarify over time, not all at once.",
+    sections: [
+      {
+        id: "alive",
+        kind: "text",
+        title: "A time I felt most alive",
+        prompt: "Describe a time you felt most useful or most alive. What were you doing, and who benefited?"
+      },
+      {
+        id: "unobserved",
+        kind: "text",
+        title: "What I would do unobserved",
+        prompt: "If nobody would ever know what you did, what would you still do every week? Be specific about the work and the people."
+      },
+      {
+        id: "burden",
+        kind: "text",
+        title: "A problem that bothers me",
+        prompt: "What problem in your community or the wider world bothers you enough that you would give time to it?"
+      },
+      {
+        id: "gifts",
+        kind: "text",
+        title: "My gifts, used for others",
+        prompt: "List three things you do naturally well. For each, describe how it could serve someone who is struggling with something you understand."
+      },
+      {
+        id: "loved_ones",
+        kind: "text",
+        title: "What the people closest to me would say",
+        prompt: "What would the people closest to you say about how you lived? Write it as an honest account, not a eulogy."
+      },
+      {
+        id: "cost",
+        kind: "text",
+        title: "What I am willing to give up",
+        prompt: "What are you willing to give up to pursue this direction? Name the comforts and the approvals."
+      },
+      {
+        id: "statement",
+        kind: "text",
+        title: "A one-sentence statement of purpose",
+        prompt: "Draft one sentence that describes what you are for. Keep it plain. Revise it in a month.",
+        help: "A working draft is enough. You will sharpen it as your work and relationships change."
+      }
+    ]
   },
   {
     id: "shared-review",
-    status: "coming",
+    status: "active",
     number: "10",
     title: "Shared Review",
     subtitle: "Work through the suite with a witness",
-    summary: "Run the review with a trusted friend, mentor, or partner who reflects back what they hear."
+    time: "About 30 minutes with a witness, then monthly",
+    intro: "Growth is easier to sustain with someone who knows what you intend. This module sets up a witness: a trusted friend, mentor, or partner who checks in on the commitments you made.",
+    note: "A witness is not a judge. Choose someone who will be honest with you and who you trust to keep your confidence.",
+    sections: [
+      {
+        id: "witnesses",
+        kind: "rows",
+        title: "My witnesses",
+        prompt: "List up to three people who have agreed to check in with you. Note how to reach them and whether they have said yes.",
+        columns: [
+          { key: "name", label: "Witness", type: "text", placeholder: "First name" },
+          { key: "reach", label: "How to reach them", type: "text", placeholder: "Phone, email, or in person" },
+          { key: "agreed", label: "Agreed?", type: "select", options: ["Yes", "Not yet"] }
+        ],
+        minRows: 1,
+        maxRows: 3,
+        addLabel: "Add a witness"
+      },
+      {
+        id: "brief",
+        kind: "text",
+        title: "What I want to be held to",
+        prompt: "Write the one commitment you most want your witness to ask you about each month.",
+        help: "Give them the exact words you used in The Plan, so they are checking the same thing you are."
+      },
+      {
+        id: "questions",
+        kind: "text",
+        title: "Questions for each check-in",
+        prompt: "Write three questions to ask at every check-in. Good questions are specific and answerable: What did you do? What got in the way? What is next?"
+      },
+      {
+        id: "checkin",
+        kind: "text",
+        title: "Notes from my last check-in",
+        prompt: "What did you say you would do since the last check-in, and what did you actually do? What did your witness notice?"
+      }
+    ]
   }
 ];
