@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://alleebauder.github.io/easy-lover/sitemap.xml
