@@ -136,8 +136,9 @@ h1, h2, h3 {
 
 main {
   width: 100%;
-  max-width: 820px;
-  padding: 48px clamp(20px, 5vw, 64px) 96px;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 56px clamp(20px, 4vw, 56px) 96px;
   outline: none;
 }
 
@@ -207,6 +208,10 @@ main {
   line-height: 1.45;
   color: var(--ink);
   margin: 14px 0 0;
+}
+
+.page-head .callout {
+  margin-top: 18px;
 }
 
 .intro {
@@ -470,9 +475,6 @@ input::placeholder {
 }
 .icon-btn:hover { color: var(--danger); border-color: var(--danger); }
 
-/* Domain ratings */
-.domain { display: grid; gap: 12px; }
-
 .score-row {
   display: flex;
   align-items: center;
@@ -490,6 +492,37 @@ input::placeholder {
   color: var(--muted);
   font-size: 0.95rem;
 }
+
+/* Checklists (choose kind) */
+.choices {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+  display: grid;
+  gap: 8px;
+}
+.choices label {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  cursor: pointer;
+  line-height: 1.45;
+}
+.choices label:hover { border-color: var(--accent); }
+.choices input {
+  margin-top: 4px;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.choices input:disabled { cursor: not-allowed; }
+.choices input:disabled ~ span { opacity: 0.45; }
 
 /* ---------- buttons ---------- */
 
@@ -629,6 +662,20 @@ details.review > .help { margin-top: 14px; }
 .toast.is-visible {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+.crisis {
+  margin-top: 40px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.notfound {
+  max-width: 640px;
+  margin: 12vh auto;
+  padding: 0 24px;
 }
 
 /* ---------- responsive ---------- */

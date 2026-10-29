@@ -1,30 +1,32 @@
 # Self Authoring Suite
 
-A free, private, local-first self-reflection suite. Four guided modules move you from an honest look at the past to specific commitments for the future, and a weekly review keeps the work alive.
+A free, private, local-first self-reflection suite. Five guided modules take you from your history, through an honest look at your faults and strengths, to a direction and a plan. A weekly review keeps the work alive.
 
-This is an independent, original take on structured self-authoring. It is not affiliated with or endorsed by the original Self Authoring Suite or its authors. All prompts here were written for this project.
+This is an independent, original take on structured self-authoring. It is not affiliated with or endorsed by the original Self Authoring Suite or its authors. All prompts here are written for this project. See [SOURCES.md](SOURCES.md) for the research behind the structure.
 
-**Live site:** `https://<your-username>.github.io/self-authoring-suite/` (replace after enabling GitHub Pages)
+**Live site:** https://alleebauder.github.io/Easy-lover/
 
 ## What is inside
 
 | Module | Question it answers |
 | --- | --- |
-| 01 Past Self | Where have I been? Credit I have not given myself, turning points, gaps between word and deed, recurring patterns, energy in relationships, an honest friend's view. |
-| 02 Present Self | Where do I stand? A 1–10 rating and a note for eight areas of life, plus what I am avoiding, running on autopilot, and should protect. |
-| 03 Future Self | Where am I going? Five values, an ordinary day three years out, three traits I am building, a one-year success condition, a five-year direction. |
-| 04 The Plan | What will I do? One anchor area, up to three if-then commitments, a first step with a time on it, an expected obstacle, and a witness. |
-| Weekly review | Each week: did I follow through, what went well, what drained me, one priority for next week. Scores are charted over time. |
+| 01 Past Self | Where have I been? Map my life into epochs, examine ten experiences, see the patterns across them. |
+| 02 Present: Faults | Where do I get in my own way? Choose from five personality dimensions, rank the costliest faults, and write about each. |
+| 03 Present: Virtues | What do I do well? Choose strengths from the same five dimensions, and describe when they helped and how to use them on purpose. |
+| 04 Future Self | Where am I going? Daydream the ideal future, name the one to avoid, clarify values and seven life areas, then set ranked goals. |
+| 05 The Plan | What will I do? One fault to work against, one virtue to lean on, up to three if-then commitments, a first step, and a witness. |
+| Weekly review | Each week: did I follow through, what went well, what drained me, one priority. Follow-through is charted over time. |
 
 Modules on the roadmap (Values in Action, Relationship Ledger, Habit Lab, Meaning and Calling, Shared Review) are listed on the site and in [ROADMAP.md](ROADMAP.md).
 
 ## Where this improves on a one-time workbook
 
-- **It repeats.** A one-off exercise fades. The weekly review turns it into a practice and charts follow-through over time.
-- **Commitments are specific.** The plan asks for if-then statements, a first step with a day and time, and a named witness, which are the parts most likely to change behavior.
+- **It repeats.** The weekly review turns a one-time exercise into a practice and charts follow-through.
+- **Commitments are specific.** The plan asks for if-then statements, a dated first step, and a named witness.
 - **It is private by default.** No account, no server, no analytics. Answers stay in your browser's local storage.
+- **It is paced.** Each module shows an estimated time and a note on working through heavy material, with a crisis line on every page.
 - **You can take it with you.** Export to Markdown for reading, JSON for a full backup, or print to PDF.
-- **It is built to grow.** Modules are plain data in `modules.js`. Adding one does not require touching the rest of the code.
+- **It is built to grow.** Modules are plain data in `modules.js`. Adding one does not require changing the engine.
 - **It works everywhere.** Mobile-friendly, keyboard-navigable, respects light and dark mode and reduced motion, and has no build step or external dependencies.
 
 ## Run it locally
@@ -32,27 +34,27 @@ Modules on the roadmap (Values in Action, Relationship Ledger, Habit Lab, Meanin
 No build step is needed. Either open `index.html` in a browser, or serve the folder:
 
 ```bash
-cd self-authoring-suite
 python3 -m http.server 8000
 # then visit http://localhost:8000
 ```
 
 ## Publish on GitHub Pages
 
-1. Create a repository named `self-authoring-suite` and push this folder to it on the `main` branch.
-2. In the repository, go to **Settings → Pages**.
-3. Under **Build and deployment**, choose **Deploy from a branch**, select `main`, and folder `/ (root)`.
-4. Save. The site appears at `https://<your-username>.github.io/self-authoring-suite/` within a minute or two.
+1. In the repository, go to **Settings → Pages**.
+2. Under **Build and deployment**, choose **Deploy from a branch**, select `main`, and folder `/ (root)`.
+3. Save. The site appears at the URL shown on that page within a minute or two.
 
 The included `.nojekyll` file tells GitHub Pages to serve the files as they are.
 
 ## Project layout
 
 ```
-index.html    page shell
+index.html    page shell and social-share metadata
 styles.css    all styling (light and dark, print styles included)
-modules.js    all content: module titles, prompts, and roadmap cards
+modules.js    all content: prompts, checklist options, and roadmap cards
 app.js        engine: storage, navigation, progress, weekly review, export
+404.html      page for unknown addresses
+SOURCES.md    research behind the structure, with discrepancies noted
 ROADMAP.md    where the project is going
 ```
 
@@ -64,19 +66,21 @@ Open `modules.js` and add an object to `window.SA_MODULES`:
 {
   id: "my-module",
   status: "active",          // or "coming" to show it as a roadmap card
-  number: "10",
+  number: "11",
   title: "My Module",
   subtitle: "A short question it answers",
+  time: "About an hour",
   intro: "One paragraph on why this matters.",
+  note: "Optional guidance shown as a callout.",
   sections: [
     { id: "first", kind: "text", title: "Heading", prompt: "The question." },
-    { id: "scores", kind: "domain", title: "Area", prompt: "Rate it." },
-    { id: "items", kind: "list", title: "Lines", prompt: "Name up to three.", max: 3 }
+    { id: "pick", kind: "choose", title: "Pick some", prompt: "Choose.", options: ["A", "B", "C"], max: 2 },
+    { id: "rank", kind: "list", title: "Rank them", prompt: "Write up to three.", max: 3 }
   ]
 }
 ```
 
-Section kinds are `text` (free writing), `list` (short lines, optionally capped with `max`), and `domain` (a 1–10 rating with a note).
+Section kinds are `text` (free writing), `choose` (tick up to `max` options from `options`), and `list` (short lines, optionally capped with `max`).
 
 ## Your data and privacy
 
@@ -86,7 +90,7 @@ Section kinds are `text` (free writing), `list` (short lines, optionally capped 
 
 ## Contributing
 
-Ideas, prompt improvements, accessibility fixes, and new modules are welcome. Please open an issue first for larger changes so the direction stays coherent. See [ROADMAP.md](ROADMAP.md) for what is planned.
+Ideas, prompt improvements, accessibility fixes, and new modules are welcome. Open an issue first for larger changes so the direction stays coherent.
 
 ## License
 

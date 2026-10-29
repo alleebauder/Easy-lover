@@ -3,6 +3,7 @@
 
   var APP_ID = "self-authoring-suite";
   var STORAGE_KEY = "self-authoring-suite:v1";
+  var CRISIS_LINE = "If anything here leaves you feeling unsafe or thinking about harming yourself, contact emergency services or a crisis line now. In the US, call or text 988.";
   var MODULES = window.SA_MODULES || [];
   var ACTIVE = MODULES.filter(function (m) { return m.status === "active"; });
   var COMING = MODULES.filter(function (m) { return m.status !== "active"; });
@@ -67,13 +68,14 @@
     return mod.id + "/" + section.id;
   }
 
+  function isListKind(section) {
+    return section.kind === "list" || section.kind === "choose";
+  }
+
   function isFilled(section, value) {
     if (value === null || value === undefined) return false;
-    if (section.kind === "list") {
+    if (isListKind(section)) {
       return Array.isArray(value) && value.some(function (x) { return String(x).trim() !== ""; });
-    }
-    if (section.kind === "domain") {
-      return typeof value === "object" && (typeof value.score === "number" || String(value.note || "").trim() !== "");
     }
     return typeof value === "string" && value.trim() !== "";
   }
@@ -95,7 +97,7 @@
     scheduleSave();
   }
 
-  /* ---------- lookups and helpers ---------- */
+  /* ---------- helpers ---------- */
 
   function $(id) {
     return document.getElementById(id);
@@ -195,6 +197,10 @@
     toastTimer = setTimeout(function () { node.classList.remove("is-visible"); }, 2800);
   }
 
+  function crisisNote() {
+    return el("p", { class: "crisis", text: CRISIS_LINE });
+  }
+
   /* ---------- sidebar ---------- */
 
   function navItem(id, label, progress, active) {
@@ -222,7 +228,7 @@
     nav.appendChild(el("p", { class: "nav-label", text: "On the roadmap" }));
     COMING.forEach(function (mod) {
       nav.appendChild(el("span", { class: "nav-item is-locked" }, [
-        el("span", { class: "nav-title", text: mod.title }),
+        el("span", { class: "nav-title", text: mod.number + "  " + mod.title }),
         el("span", { class: "pill", text: "Soon" })
       ]));
     });
@@ -246,31 +252,6 @@
     return area;
   }
 
-  function domainField(key, section, value, card) {
-    var current = {
-      score: value && typeof value.score === "number" ? value.score : null,
-      note: (value && value.note) || ""
-    };
-    var slider = scoreControl(current.score, section.title + ", score from 1 to 10", function (score) {
-      current.score = score;
-      commit(key, { score: current.score, note: current.note }, card, section);
-    });
-    var area = el("textarea", {
-      class: "answer",
-      rows: 3,
-      placeholder: section.placeholder || "What is working, and what would move this up one point?",
-      "aria-label": section.title + " note",
-      value: current.note
-    });
-    area.addEventListener("input", function () {
-      autosize(area);
-      current.note = area.value;
-      commit(key, { score: current.score, note: current.note }, card, section);
-    });
-    requestAnimationFrame(function () { autosize(area); });
-    return el("div", { class: "domain" }, [slider, area]);
-  }
-
   function listField(key, section, value, card) {
     var max = section.max || 99;
     var items = Array.isArray(value) && value.length ? value.slice() : [""];
@@ -281,11 +262,6 @@
       commit(key, items.map(function (t) { return t.trim(); }).filter(Boolean), card, section);
     }
 
-    function placeholderFor(i) {
-      if (section.suggestions && section.suggestions[i]) return "e.g. " + section.suggestions[i];
-      return section.placeholder || "Write one line";
-    }
-
     function render() {
       list.textContent = "";
       items.forEach(function (text, i) {
@@ -293,7 +269,7 @@
           type: "text",
           class: "answer-line",
           value: text,
-          placeholder: placeholderFor(i),
+          placeholder: section.placeholder || "Write one line",
           "aria-label": section.title + ", line " + (i + 1)
         });
         input.addEventListener("input", function () {
@@ -333,6 +309,36 @@
     ]);
   }
 
+  function chooseField(key, section, value, card) {
+    var max = section.max || 99;
+    var selected = Array.isArray(value) ? value.slice() : [];
+    var boxes = [];
+    var counter = el("p", { class: "help small" });
+
+    function refresh() {
+      counter.textContent = selected.length + " of up to " + max + " selected";
+      boxes.forEach(function (box) {
+        box.disabled = !box.checked && selected.length >= max;
+      });
+    }
+
+    var list = el("ul", { class: "choices" });
+    section.options.forEach(function (option) {
+      var input = el("input", { type: "checkbox", checked: selected.indexOf(option) !== -1 });
+      input.addEventListener("change", function () {
+        if (input.checked) selected.push(option);
+        else selected.splice(selected.indexOf(option), 1);
+        commit(key, selected.slice(), card, section);
+        refresh();
+      });
+      boxes.push(input);
+      list.appendChild(el("li", {}, [el("label", {}, [input, el("span", { text: option })])]));
+    });
+
+    refresh();
+    return el("div", { class: "choose-field" }, [list, counter]);
+  }
+
   function sectionCard(mod, section, number) {
     var key = sectionKey(mod, section);
     var value = state.answers[key];
@@ -348,7 +354,7 @@
 
     var field;
     if (section.kind === "list") field = listField(key, section, value, card);
-    else if (section.kind === "domain") field = domainField(key, section, value, card);
+    else if (section.kind === "choose") field = chooseField(key, section, value, card);
     else field = textField(key, section, value, card);
 
     card.appendChild(field);
@@ -374,13 +380,15 @@
       el("h1", { text: mod.title }),
       el("p", { class: "lede", text: mod.subtitle }),
       el("p", { class: "intro", text: mod.intro }),
+      mod.note ? el("p", { class: "callout", text: mod.note }) : null,
       progressBar(mod.title + " progress", percent(progress)),
-      el("p", { class: "muted small", text: progress.done + " of " + progress.total + " sections answered" })
+      el("p", { class: "muted small", text: progress.done + " of " + progress.total + " sections answered" + (mod.time ? "  ·  Time: " + mod.time : "") })
     ]));
     mod.sections.forEach(function (section, i) {
       main.appendChild(sectionCard(mod, section, i + 1));
     });
     main.appendChild(pager(mod.id));
+    main.appendChild(crisisNote());
   }
 
   function step(title, text) {
@@ -416,7 +424,7 @@
     main.appendChild(el("header", { class: "hero" }, [
       el("p", { class: "eyebrow", text: "A self-authoring suite" }),
       el("h1", { text: "Look back honestly. Take stock. Author the next chapter." }),
-      el("p", { class: "lede", text: "Four guided modules move you from inventory to commitment, and a weekly review keeps the work alive. Everything stays in this browser unless you choose to export it." }),
+      el("p", { class: "lede", text: "Five guided modules move you from your history, through an honest look at your strengths and faults, to a direction and a plan. A weekly review keeps the work alive. Everything stays in this browser unless you choose to export it." }),
       el("div", { class: "hero-actions" }, [
         el("a", { class: "btn primary", href: "#/" + target.id, text: cta + " →" })
       ])
@@ -424,15 +432,15 @@
 
     main.appendChild(el("h2", { class: "section-title", text: "The path" }));
     main.appendChild(el("ol", { class: "steps" }, [
-      step("Look back", "Past Self: credit you have not given yourself, turning points, and patterns that keep returning."),
-      step("Take stock", "Present Self: rate each area of life and name what you are avoiding or running on autopilot."),
-      step("Look ahead", "Future Self: your values, a vivid ideal day, and the direction you want to grow toward."),
-      step("Commit", "The Plan: convert direction into specific if-then commitments, a first step, and a witness.")
+      step("Look back", "Past Self: map your life into chapters, and examine the experiences that shaped you."),
+      step("Take stock", "Present: Faults and Virtues, organized by five personality dimensions."),
+      step("Look ahead", "Future Self: daydream your direction, name what to avoid, then set goals you control."),
+      step("Commit", "The Plan: turn direction into if-then commitments, a first step, and a witness.")
     ]));
     main.appendChild(el("p", { class: "callout" }, [
-      "Then repeat every week in the ",
+      "The order is flexible. Past is a natural start. If you want to test your honesty before the emotional material, start with Faults. Then repeat every week in the ",
       el("a", { href: "#/review", text: "weekly review" }),
-      ". Insight fades without a rhythm; the review is the rhythm."
+      "."
     ]));
 
     main.appendChild(el("h2", { class: "section-title", text: "Modules" }));
@@ -446,6 +454,7 @@
       el("h2", { text: "Private by design" }),
       el("p", { text: "Answers are saved in this browser's local storage. There is no account, no server, and no analytics. Export a backup before you clear your browser or switch devices." })
     ]));
+    main.appendChild(crisisNote());
   }
 
   function reviewField(review, key, label, prompt) {
@@ -484,7 +493,7 @@
 
     var remove = el("button", {
       type: "button",
-      class: "btn ghost",
+      class: "btn ghost danger",
       text: "Delete this review",
       onclick: function () {
         if (!window.confirm("Delete the review for week " + review.week + "?")) return;
@@ -566,14 +575,11 @@
         var value = state.answers[sectionKey(mod, section)];
         if (!isFilled(section, value)) return;
         body.push("### " + section.title, "", "_" + section.prompt + "_", "");
-        if (section.kind === "list") {
+        if (isListKind(section)) {
           value.forEach(function (item) {
             if (String(item).trim()) body.push("- " + String(item).trim());
           });
           body.push("");
-        } else if (section.kind === "domain") {
-          body.push("Rating: " + (typeof value.score === "number" ? value.score : "not rated") + " / 10", "");
-          if (String(value.note || "").trim()) body.push(String(value.note).trim(), "");
         } else {
           body.push(value.trim(), "");
         }
@@ -627,12 +633,12 @@
   }
 
   function renderExport(main) {
-    var answerCount = Object.keys(state.answers).filter(function (k) {
-      var mod = findActive(k.split("/")[0]);
-      if (!mod) return false;
-      var section = mod.sections.filter(function (s) { return s.id === k.split("/")[1]; })[0];
-      return section && isFilled(section, state.answers[k]);
-    }).length;
+    var answerCount = 0;
+    ACTIVE.forEach(function (mod) {
+      mod.sections.forEach(function (section) {
+        if (isFilled(section, state.answers[sectionKey(mod, section)])) answerCount += 1;
+      });
+    });
 
     main.appendChild(el("header", { class: "page-head" }, [
       el("p", { class: "eyebrow", text: "Practice" }),
@@ -709,12 +715,6 @@
 
   /* ---------- router ---------- */
 
-  function renderSidebarAndFocus(first) {
-    renderSidebar(first);
-    document.body.classList.remove("nav-open");
-    $("nav-toggle").setAttribute("aria-expanded", "false");
-  }
-
   function route() {
     var raw = (window.location.hash || "").replace(/^#\/?/, "");
     var first = raw.split("/").filter(Boolean)[0] || "";
@@ -729,7 +729,9 @@
     else if (first === "export") renderExport(main);
     else renderHome(main);
 
-    renderSidebarAndFocus(first);
+    renderSidebar(first);
+    document.body.classList.remove("nav-open");
+    $("nav-toggle").setAttribute("aria-expanded", "false");
     window.scrollTo(0, 0);
     main.focus({ preventScroll: true });
   }
