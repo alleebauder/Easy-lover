@@ -450,6 +450,12 @@
     main.appendChild(el("p", { class: "muted", text: "Each one is planned in ROADMAP.md. Modules are added as plain data, so the suite can grow without a rewrite." }));
     main.appendChild(el("div", { class: "grid" }, COMING.map(comingTile)));
 
+    main.appendChild(el("div", { class: "card" }, [
+      el("h2", { text: "For men: Behind and Before" }),
+      el("p", { text: "A Christian accountability journal for men, built on daily honesty and the brothers who keep you accountable. Look at it alongside your Self Authoring work." }),
+      el("a", { class: "btn primary", href: "https://behindandbefore.com", target: "_blank", rel: "noopener noreferrer", text: "Visit Behind and Before \u2192" })
+    ]));
+
     main.appendChild(el("div", { class: "privacy card" }, [
       el("h2", { text: "Private by design" }),
       el("p", { text: "Answers are saved in this browser's local storage. There is no account, no server, and no analytics. Export a backup before you clear your browser or switch devices." })
