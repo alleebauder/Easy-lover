@@ -1,6 +1,6 @@
 # Self Authoring Suite
 
-A free, private, local-first self-reflection suite. Five guided modules take you from your history, through an honest look at your faults and strengths, to a direction and a plan. A weekly review keeps the work alive.
+A free self-reflection suite. Ten guided modules take you from your history, through your faults and strengths, to a direction, a plan, and the people who keep you accountable. A weekly review keeps the work alive. Your answers are encrypted in your browser, and an optional account keeps them in sync across devices.
 
 This is an independent, original take on structured self-authoring. It is not affiliated with or endorsed by the original Self Authoring Suite or its authors. All prompts here are written for this project. See [SOURCES.md](SOURCES.md) for the research behind the structure.
 
@@ -15,9 +15,13 @@ This is an independent, original take on structured self-authoring. It is not af
 | 03 Present: Virtues | What do I do well? Choose strengths from the same five dimensions, and describe when they helped and how to use them on purpose. |
 | 04 Future Self | Where am I going? Daydream the ideal future, name the one to avoid, clarify values and seven life areas, then set ranked goals. |
 | 05 The Plan | What will I do? One fault to work against, one virtue to lean on, up to three if-then commitments, a first step, and a witness. |
+| 06 Values in Action | Do my choices match what I say matters? A typical week of time and money, tagged by value, with a summary of the split. |
+| 07 Relationship Ledger | Who gives me energy, and who do I give it to? Each person rated both ways, with a next move. |
+| 08 Habit Lab | Run small two-week experiments, predict first, then count the days kept and read the result. |
+| 09 Meaning and Calling | A slower inquiry into purpose, service, and the one-sentence statement you're working toward. |
+| 10 Shared Review | Set up a witness, the commitment they should ask about, and the questions for each check-in. |
 | Weekly review | Each week: did I follow through, what went well, what drained me, one priority. Follow-through is charted over time. |
 
-Modules on the roadmap (Values in Action, Relationship Ledger, Habit Lab, Meaning and Calling, Shared Review) are listed on the site and in [ROADMAP.md](ROADMAP.md).
 
 ## Where this improves on a one-time workbook
 
@@ -51,8 +55,14 @@ The included `.nojekyll` file tells GitHub Pages to serve the files as they are.
 ```
 index.html    page shell and social-share metadata
 styles.css    all styling (light and dark, print styles included)
-modules.js    all content: prompts, checklist options, and roadmap cards
+config.js     where the sync service lives (apiBase)
+crypto.js     client-side key derivation and encryption
+account.js    sign-up, sign-in, recovery, password change, and sync
+modules.js    all content: prompts, checklists, tables, and module order
+summaries.js  computed summaries under the table modules
 app.js        engine: storage, navigation, progress, weekly review, export
+worker/       the sync service (Cloudflare Worker + D1)
+tests/        end-to-end test (Playwright)
 404.html      page for unknown addresses
 SOURCES.md    research behind the structure, with discrepancies noted
 ROADMAP.md    where the project is going
@@ -80,13 +90,32 @@ Open `modules.js` and add an object to `window.SA_MODULES`:
 }
 ```
 
-Section kinds are `text` (free writing), `choose` (tick up to `max` options from `options`), and `list` (short lines, optionally capped with `max`).
+Section kinds are `text` (free writing), `choose` (tick up to `max` options from `options`), `list` (short lines, optionally capped with `max`), and `rows` (a small table with typed columns; add a `summary` function name from `summaries.js` to show computed lines under it).
 
-## Your data and privacy
+## Accounts, encryption, and privacy
 
-- Everything you write is stored in `localStorage` in the browser you use. Nothing is sent to a server.
-- Clearing your browser's site data erases it. Export a JSON backup first if you want to keep it.
-- Restoring a backup replaces what is currently saved in that browser, after you confirm.
+- **Without an account**, answers stay in this browser only.
+- **With an account**, answers are encrypted in your browser before they are sent. The server stores your email, a salted verifier that cannot reveal your password, the encrypted data key, and encrypted answers. It cannot read your answers.
+- **Recovery code.** When you create an account you get a recovery code, shown once. It is the only way back in if you lose your password. Nobody at this site can recover it for you. If you lose both the password and the code, the answers cannot be recovered.
+- **Sign-out** removes the answers from the device and keeps them in your account.
+- **Password change or recovery** signs out your other devices.
+
+## Accounts setup (for the site owner)
+
+The Worker lives in `worker/`. It uses Cloudflare Workers and D1.
+
+```bash
+cd worker
+npx wrangler login
+npx wrangler d1 create self-authoring-suite      # copy the database_id into wrangler.jsonc
+npx wrangler d1 execute self-authoring-suite --remote --file=schema.sql
+npx wrangler secret put PEPPER                    # a long random string; never commit it
+npx wrangler deploy
+```
+
+Then set `apiBase` in `config.js` to the Worker's URL (for example `https://self-authoring-api.<account>.workers.dev`), and push. Until then the Account page says accounts are not connected yet, and everything still works on this device.
+
+For local testing: create `worker/.dev.vars` with `PEPPER=...` (never committed), apply the schema locally with `npx wrangler d1 execute self-authoring-suite --local --persist-to .wrangler/state --file=schema.sql`, start `npx wrangler dev --local --persist-to .wrangler/state --port 8787`, serve this folder on port 8000, and run `node tests/e2e.js`.
 
 ## Contributing
 

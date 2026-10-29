@@ -6,7 +6,6 @@
   var CRISIS_LINE = "If anything here leaves you feeling unsafe or thinking about harming yourself, contact emergency services or a crisis line now. In the US, call or text 988.";
   var MODULES = window.SA_MODULES || [];
   var ACTIVE = MODULES.filter(function (m) { return m.status === "active"; });
-  var COMING = MODULES.filter(function (m) { return m.status !== "active"; });
 
   var state = load();
   var saveTimer = null;
@@ -41,20 +40,25 @@
     }
   }
 
-  function persist() {
+  // Writes the local copy. Does not trigger a sync, so syncing can't loop on itself.
+  function persistNow() {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      setStatus("Saved in this browser");
+      setStatus("Saved on this device");
     } catch (err) {
-      setStatus("Could not save in this browser");
+      setStatus("Could not save on this device");
     }
     renderSidebar(currentRoute);
   }
 
+  // Called after every edit: save locally, then ask the account layer to sync.
   function scheduleSave() {
     setStatus("Saving...");
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(persist, 400);
+    saveTimer = setTimeout(function () {
+      persistNow();
+      if (window.SAAccount) window.SAAccount.onSave();
+    }, 400);
   }
 
   function setStatus(text) {
@@ -74,6 +78,11 @@
 
   function isFilled(section, value) {
     if (value === null || value === undefined) return false;
+    if (section.kind === "rows") {
+      return Array.isArray(value) && value.some(function (row) {
+        return row && Object.keys(row).some(function (k) { return row[k] !== "" && row[k] !== null && row[k] !== undefined; });
+      });
+    }
     if (isListKind(section)) {
       return Array.isArray(value) && value.some(function (x) { return String(x).trim() !== ""; });
     }
@@ -155,14 +164,7 @@
 
   function scoreControl(score, label, onChange) {
     var readout = el("span", { class: "score-out", text: scoreText(score) });
-    var range = el("input", {
-      type: "range",
-      min: "1",
-      max: "10",
-      step: "1",
-      value: score || 5,
-      "aria-label": label
-    });
+    var range = el("input", { type: "range", min: "1", max: "10", step: "1", value: score || 5, "aria-label": label });
     range.addEventListener("input", function () {
       var next = Number(range.value);
       readout.textContent = scoreText(next);
@@ -224,14 +226,8 @@
     });
     nav.appendChild(el("p", { class: "nav-label", text: "Practice" }));
     nav.appendChild(navItem("review", "Weekly review", null, current === "review"));
+    nav.appendChild(navItem("account", "Account and sync", null, current === "account"));
     nav.appendChild(navItem("export", "Export and privacy", null, current === "export"));
-    nav.appendChild(el("p", { class: "nav-label", text: "On the roadmap" }));
-    COMING.forEach(function (mod) {
-      nav.appendChild(el("span", { class: "nav-item is-locked" }, [
-        el("span", { class: "nav-title", text: mod.number + "  " + mod.title }),
-        el("span", { class: "pill", text: "Soon" })
-      ]));
-    });
   }
 
   /* ---------- section fields ---------- */
@@ -339,6 +335,117 @@
     return el("div", { class: "choose-field" }, [list, counter]);
   }
 
+  /* Table-row field: rows of typed columns. Used by the modules that track people, activities, and experiments. */
+  function columnOptions(col) {
+    if (col.optionsFrom) {
+      var fromAnswer = state.answers[col.optionsFrom];
+      return Array.isArray(fromAnswer) ? fromAnswer.filter(function (v) { return String(v).trim() !== ""; }) : [];
+    }
+    return col.options || [];
+  }
+
+  function rowsField(key, mod, section, value, card) {
+    var cols = section.columns;
+    var minRows = section.minRows || 1;
+    var maxRows = section.maxRows || 30;
+    var rows = Array.isArray(value) && value.length ? value.map(function (r) { return Object.assign({}, r); }) : [];
+    while (rows.length < minRows) rows.push({});
+
+    var summaryBox = el("div", { class: "summary" });
+    var tbody = el("tbody");
+    var table = el("table", { class: "rows-table" }, [
+      el("thead", {}, [el("tr", {}, cols.map(function (c) { return el("th", { scope: "col", text: c.label }); }).concat([el("th", { scope: "col", text: "" })]))]),
+      tbody
+    ]);
+    var addBtn = el("button", { type: "button", class: "btn ghost", text: section.addLabel || "Add a row" });
+
+    function store() {
+      var clean = rows.filter(function (r) {
+        return Object.keys(r).some(function (k) { return r[k] !== "" && r[k] !== undefined && r[k] !== null; });
+      });
+      commit(key, clean, card, section);
+      refreshSummary();
+    }
+
+    function refreshSummary() {
+      summaryBox.textContent = "";
+      var fn = window.SASummaries && window.SASummaries[section.summary];
+      if (!fn) return;
+      var lines = fn(rows, state);
+      if (!lines.length) return;
+      lines.forEach(function (line) { summaryBox.appendChild(el("p", { text: line })); });
+    }
+
+    function cell(col, row, index) {
+      var label = section.title + ", row " + (index + 1) + ", " + col.label;
+      if (col.type === "select") {
+        var select = el("select", { "aria-label": label });
+        var opts = columnOptions(col);
+        if (col.none) select.appendChild(el("option", { value: "", text: col.none }));
+        if (!col.optionsFrom && !col.none) select.appendChild(el("option", { value: "", text: "Choose" }));
+        opts.forEach(function (o) { select.appendChild(el("option", { value: o, text: o })); });
+        select.value = row[col.key] || "";
+        select.addEventListener("change", function () {
+          row[col.key] = select.value;
+          store();
+        });
+        return el("td", {}, [select]);
+      }
+      var input = el("input", {
+        type: col.type === "number" ? "number" : "text",
+        "aria-label": label,
+        placeholder: col.placeholder || "",
+        value: row[col.key] === undefined ? "" : row[col.key]
+      });
+      if (col.type === "number") {
+        if (col.min !== undefined) input.min = String(col.min);
+        if (col.max !== undefined) input.max = String(col.max);
+        input.inputMode = "decimal";
+      }
+      input.addEventListener("input", function () {
+        row[col.key] = col.type === "number" ? (input.value === "" ? "" : Number(input.value)) : input.value;
+        store();
+      });
+      return el("td", {}, [input]);
+    }
+
+    function render() {
+      tbody.textContent = "";
+      rows.forEach(function (row, i) {
+        var remove = el("button", {
+          type: "button",
+          class: "icon-btn",
+          text: "×",
+          "aria-label": "Remove row " + (i + 1),
+          onclick: function () {
+            rows.splice(i, 1);
+            while (rows.length < minRows) rows.push({});
+            render();
+            store();
+          }
+        });
+        tbody.appendChild(el("tr", {}, cols.map(function (c) { return cell(c, row, i); }).concat([el("td", {}, [remove])])));
+      });
+      addBtn.disabled = rows.length >= maxRows;
+    }
+
+    addBtn.addEventListener("click", function () {
+      if (rows.length >= maxRows) return;
+      rows.push({});
+      render();
+      var inputs = tbody.querySelectorAll("input");
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    });
+
+    render();
+    refreshSummary();
+    return el("div", { class: "rows-field" }, [
+      el("div", { class: "rows-wrap" }, [table]),
+      el("div", { class: "button-row" }, [addBtn]),
+      summaryBox
+    ]);
+  }
+
   function sectionCard(mod, section, number) {
     var key = sectionKey(mod, section);
     var value = state.answers[key];
@@ -353,7 +460,8 @@
     if (section.help) card.appendChild(el("p", { class: "help", text: section.help }));
 
     var field;
-    if (section.kind === "list") field = listField(key, section, value, card);
+    if (section.kind === "rows") field = rowsField(key, mod, section, value, card);
+    else if (section.kind === "list") field = listField(key, section, value, card);
     else if (section.kind === "choose") field = chooseField(key, section, value, card);
     else field = textField(key, section, value, card);
 
@@ -406,15 +514,6 @@
     ]);
   }
 
-  function comingTile(mod) {
-    return el("div", { class: "tile is-locked" }, [
-      el("span", { class: "eyebrow", text: "Module " + mod.number }),
-      el("h3", { text: mod.title }),
-      el("p", { class: "tile-sub", text: mod.summary }),
-      el("span", { class: "pill", text: "Coming" })
-    ]);
-  }
-
   function renderHome(main) {
     var anyProgress = ACTIVE.some(function (m) { return moduleProgress(m).done > 0; });
     var next = ACTIVE.filter(function (m) { var p = moduleProgress(m); return p.done < p.total; })[0];
@@ -424,7 +523,7 @@
     main.appendChild(el("header", { class: "hero" }, [
       el("p", { class: "eyebrow", text: "A self-authoring suite" }),
       el("h1", { text: "Look back honestly. Take stock. Author the next chapter." }),
-      el("p", { class: "lede", text: "Five guided modules move you from your history, through an honest look at your strengths and faults, to a direction and a plan. A weekly review keeps the work alive. Everything stays in this browser unless you choose to export it." }),
+      el("p", { class: "lede", text: "Ten guided modules take you from your history, through your faults and strengths, to a direction, a plan, and the people who keep you accountable. A weekly review keeps the work alive." }),
       el("div", { class: "hero-actions" }, [
         el("a", { class: "btn primary", href: "#/" + target.id, text: cta + " →" })
       ])
@@ -435,10 +534,10 @@
       step("Look back", "Past Self: map your life into chapters, and examine the experiences that shaped you."),
       step("Take stock", "Present: Faults and Virtues, organized by five personality dimensions."),
       step("Look ahead", "Future Self: daydream your direction, name what to avoid, then set goals you control."),
-      step("Commit", "The Plan: turn direction into if-then commitments, a first step, and a witness.")
+      step("Commit", "The Plan, then Values in Action, Relationship Ledger, Habit Lab, Meaning and Calling, and Shared Review.")
     ]));
     main.appendChild(el("p", { class: "callout" }, [
-      "The order is flexible. Past is a natural start. If you want to test your honesty before the emotional material, start with Faults. Then repeat every week in the ",
+      "Then repeat every week in the ",
       el("a", { href: "#/review", text: "weekly review" }),
       "."
     ]));
@@ -446,31 +545,16 @@
     main.appendChild(el("h2", { class: "section-title", text: "Modules" }));
     main.appendChild(el("div", { class: "grid" }, ACTIVE.map(moduleTile)));
 
-    main.appendChild(el("h2", { class: "section-title", text: "Coming to the suite" }));
-    main.appendChild(el("p", { class: "muted", text: "Each one is planned in ROADMAP.md. Modules are added as plain data, so the suite can grow without a rewrite." }));
-    main.appendChild(el("div", { class: "grid" }, COMING.map(comingTile)));
-
-    main.appendChild(el("div", { class: "card" }, [
-      el("h2", { text: "For men: Behind and Before" }),
-      el("p", { text: "A Christian accountability journal for men, built on daily honesty and the brothers who keep you accountable. Look at it alongside your Self Authoring work." }),
-      el("a", { class: "btn primary", href: "https://behindandbefore.com", target: "_blank", rel: "noopener noreferrer", text: "Visit Behind and Before \u2192" })
-    ]));
-
     main.appendChild(el("div", { class: "privacy card" }, [
       el("h2", { text: "Private by design" }),
-      el("p", { text: "Answers are saved in this browser's local storage. There is no account, no server, and no analytics. Export a backup before you clear your browser or switch devices." })
+      el("p", { text: "Your answers are encrypted in this browser. Without an account they stay on this device. With an account, only encrypted data is sent, and the service cannot read it. Export a backup before you clear your browser." })
     ]));
     main.appendChild(crisisNote());
   }
 
   function reviewField(review, key, label, prompt) {
     var id = "rv-" + review.week + "-" + key;
-    var area = el("textarea", {
-      class: "answer",
-      id: id,
-      rows: 3,
-      value: review[key] || ""
-    });
+    var area = el("textarea", { class: "answer", id: id, rows: 3, value: review[key] || "" });
     area.addEventListener("input", function () {
       autosize(area);
       review[key] = area.value;
@@ -504,7 +588,8 @@
       onclick: function () {
         if (!window.confirm("Delete the review for week " + review.week + "?")) return;
         state.reviews = state.reviews.filter(function (r) { return r !== review; });
-        persist();
+        persistNow();
+        scheduleSave();
         route();
       }
     });
@@ -541,7 +626,8 @@
         text: "Start this week's review (" + week + ")",
         onclick: function () {
           state.reviews.unshift({ week: week, score: null, planHonored: "", wins: "", drains: "", priority: "" });
-          persist();
+          persistNow();
+          scheduleSave();
           route();
         }
       }));
@@ -572,6 +658,14 @@
     main.appendChild(pager("review"));
   }
 
+  function rowLine(row, section) {
+    return section.columns.map(function (c) {
+      var v = row[c.key];
+      if (v === undefined || v === "") return null;
+      return c.label + ": " + v;
+    }).filter(Boolean).join(" · ");
+  }
+
   function buildMarkdown() {
     var lines = ["# Self Authoring Suite", "", "_Exported " + todayISO() + "_", ""];
 
@@ -581,7 +675,13 @@
         var value = state.answers[sectionKey(mod, section)];
         if (!isFilled(section, value)) return;
         body.push("### " + section.title, "", "_" + section.prompt + "_", "");
-        if (isListKind(section)) {
+        if (section.kind === "rows") {
+          value.forEach(function (row) {
+            var line = rowLine(row, section);
+            if (line) body.push("- " + line);
+          });
+          body.push("");
+        } else if (isListKind(section)) {
           value.forEach(function (item) {
             if (String(item).trim()) body.push("- " + String(item).trim());
           });
@@ -629,9 +729,10 @@
         toast("That file is not a Self Authoring Suite backup.");
         return;
       }
-      if (!window.confirm("Replace what is saved in this browser with this backup?")) return;
+      if (!window.confirm("Replace what is saved on this device with this backup?")) return;
       state = normalize(data);
-      persist();
+      persistNow();
+      scheduleSave();
       route();
       toast("Backup restored.");
     };
@@ -649,17 +750,12 @@
     main.appendChild(el("header", { class: "page-head" }, [
       el("p", { class: "eyebrow", text: "Practice" }),
       el("h1", { text: "Export and privacy" }),
-      el("p", { class: "lede", text: "Your writing lives only in this browser. Export a copy whenever you want one, or move your data to another device." }),
-      el("p", { class: "muted small", text: answerCount + " answers and " + state.reviews.length + " weekly reviews saved." })
+      el("p", { class: "lede", text: "Keep a copy you own, whether or not you use an account. Exports are in plain text, so store them somewhere you trust." }),
+      el("p", { class: "muted small", text: answerCount + " answers and " + state.reviews.length + " weekly reviews saved on this device." })
     ]));
 
-    var confirmInput = el("input", {
-      type: "text",
-      class: "answer-line",
-      placeholder: "Type ERASE",
-      "aria-label": "Type ERASE to confirm"
-    });
-    var eraseBtn = el("button", { type: "button", class: "btn danger", text: "Erase everything", disabled: true });
+    var confirmInput = el("input", { type: "text", class: "answer-line", placeholder: "Type ERASE", "aria-label": "Type ERASE to confirm" });
+    var eraseBtn = el("button", { type: "button", class: "btn danger", text: "Erase everything on this device", disabled: true });
     confirmInput.addEventListener("input", function () {
       eraseBtn.disabled = confirmInput.value !== "ERASE";
     });
@@ -668,14 +764,10 @@
       state = emptyState();
       try { window.localStorage.removeItem(STORAGE_KEY); } catch (err) { /* ignore */ }
       route();
-      toast("All data erased from this browser.");
+      toast("Erased from this device.");
     });
 
-    var fileInput = el("input", {
-      type: "file",
-      accept: "application/json,.json",
-      "aria-label": "Choose a backup file to restore"
-    });
+    var fileInput = el("input", { type: "file", accept: "application/json,.json", "aria-label": "Choose a backup file to restore" });
     fileInput.addEventListener("change", function () {
       if (fileInput.files && fileInput.files[0]) restoreFromFile(fileInput.files[0]);
       fileInput.value = "";
@@ -685,36 +777,26 @@
       el("h2", { text: "Export" }),
       el("p", { class: "help", text: "Markdown reads well and prints cleanly. JSON is a full backup you can restore later." }),
       el("div", { class: "button-row" }, [
-        el("button", {
-          type: "button",
-          class: "btn primary",
-          text: "Download Markdown",
-          onclick: function () {
-            download("self-authoring-suite-" + todayISO() + ".md", buildMarkdown(), "text/markdown");
-          }
-        }),
-        el("button", {
-          type: "button",
-          class: "btn",
-          text: "Download JSON backup",
-          onclick: function () {
-            var payload = { app: APP_ID, version: 1, exportedAt: new Date().toISOString(), answers: state.answers, reviews: state.reviews };
-            download("self-authoring-suite-" + todayISO() + ".json", JSON.stringify(payload, null, 2), "application/json");
-          }
-        }),
+        el("button", { type: "button", class: "btn primary", text: "Download Markdown", onclick: function () {
+          download("self-authoring-suite-" + todayISO() + ".md", buildMarkdown(), "text/markdown");
+        } }),
+        el("button", { type: "button", class: "btn", text: "Download JSON backup", onclick: function () {
+          var payload = { app: APP_ID, version: 1, exportedAt: new Date().toISOString(), answers: state.answers, reviews: state.reviews };
+          download("self-authoring-suite-" + todayISO() + ".json", JSON.stringify(payload, null, 2), "application/json");
+        } }),
         el("button", { type: "button", class: "btn", text: "Print or save as PDF", onclick: function () { window.print(); } })
       ])
     ]));
 
     main.appendChild(el("section", { class: "card" }, [
       el("h2", { text: "Restore" }),
-      el("p", { class: "help", text: "Choose a JSON backup from this suite. It replaces what is currently saved in this browser." }),
+      el("p", { class: "help", text: "Choose a JSON backup from this suite. It replaces what is saved on this device, and syncs if you are signed in." }),
       fileInput
     ]));
 
     main.appendChild(el("section", { class: "card danger-zone" }, [
       el("h2", { text: "Erase" }),
-      el("p", { class: "help", text: "Removes every answer and review from this browser. This cannot be undone unless you have a backup." }),
+      el("p", { class: "help", text: "Removes every answer and review from this device. If you are signed in, your account copy is not affected. Sign out from the Account page to remove it from this device." }),
       el("div", { class: "button-row" }, [confirmInput, eraseBtn])
     ]));
   }
@@ -732,6 +814,10 @@
     var mod = findActive(first);
     if (mod) renderModule(main, mod);
     else if (first === "review") renderReviews(main);
+    else if (first === "account") {
+      if (window.SAAccount) window.SAAccount.render(main);
+      else main.appendChild(el("p", { text: "Account features are loading." }));
+    }
     else if (first === "export") renderExport(main);
     else renderHome(main);
 
@@ -741,6 +827,16 @@
     window.scrollTo(0, 0);
     main.focus({ preventScroll: true });
   }
+
+  // Shared with account.js, which is loaded before this file.
+  window.SAApp = {
+    el: el,
+    toast: toast,
+    getState: function () { return state; },
+    replaceState: function (next) { state = normalize(next); persistNow(); },
+    emptyState: emptyState,
+    route: function () { route(); }
+  };
 
   /* ---------- boot ---------- */
 
