@@ -221,6 +221,7 @@
     nav.textContent = "";
     nav.appendChild(el("p", { class: "nav-label", text: "Modules" }));
     nav.appendChild(navItem("", "Overview", null, current === ""));
+    nav.appendChild(navItem("guide", "How to use this suite", null, current === "guide"));
     ACTIVE.forEach(function (mod) {
       nav.appendChild(navItem(mod.id, mod.number + "  " + mod.title, moduleProgress(mod), current === mod.id));
     });
@@ -458,6 +459,8 @@
     ]));
     card.appendChild(el("p", { class: "prompt", text: section.prompt }));
     if (section.help) card.appendChild(el("p", { class: "help", text: section.help }));
+    var example = (window.SA_EXAMPLES || {})[mod.id + "/" + section.id];
+    if (example) card.appendChild(el("p", { class: "example" }, [el("span", { class: "example-label", text: "For example: " }), example]));
 
     var field;
     if (section.kind === "rows") field = rowsField(key, mod, section, value, card);
@@ -474,6 +477,7 @@
 
   function pager(id) {
     var order = [""].concat(ACTIVE.map(function (m) { return m.id; }), ["review"]);
+    if (id === "guide") return el("nav", { class: "pager", "aria-label": "Continue" }, [el("a", { class: "btn primary", href: "#/" + ACTIVE[0].id, text: ACTIVE[0].title + " \u2192" })]);
     var i = order.indexOf(id);
     var links = [];
     if (i > 0) links.push(el("a", { class: "btn ghost", href: "#/" + order[i - 1], text: "← " + labelFor(order[i - 1]) }));
@@ -802,6 +806,20 @@
     ]));
   }
 
+  function renderGuide(main) {
+    main.appendChild(el("header", { class: "page-head" }, [
+      el("p", { class: "eyebrow", text: "Start here" }),
+      el("h1", { text: "How to use this suite" }),
+      el("p", { class: "lede", text: "A short guide to working through the modules at a pace that holds up." })
+    ]));
+    (window.SA_GUIDE || []).forEach(function (part) {
+      main.appendChild(el("section", { class: "card guide-part" }, [el("h2", { text: part.title })].concat(part.body.map(function (p) {
+        return el("p", { text: p });
+      }))));
+    });
+    main.appendChild(pager("guide"));
+  }
+
   /* ---------- router ---------- */
 
   function route() {
@@ -820,6 +838,7 @@
       else main.appendChild(el("p", { text: "Account features are loading." }));
     }
     else if (first === "export") renderExport(main);
+    else if (first === "guide") renderGuide(main);
     else renderHome(main);
 
     renderSidebar(first);

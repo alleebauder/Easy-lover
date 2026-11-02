@@ -278,7 +278,7 @@ window.SA_MODULES = [
         id: "daydream",
         kind: "text",
         title: "My ideal future: fifteen minutes of daydreaming",
-        prompt: "Describe your life three to five years from now, set up the way would be best for you. Write about an ordinary Tuesday in that life: where you wake up, who is with you, the work you do, and how the evening ends.",
+        prompt: "Describe your life three to five years from now, arranged the way that would be best for you. Write about an ordinary Tuesday in that life: where you wake up, who is with you, the work you do, and how the evening ends.",
         help: "Use concrete, sensory detail. Don't stop to check whether it's realistic yet."
       },
       {
