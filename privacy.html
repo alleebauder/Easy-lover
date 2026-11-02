@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy · Self Authoring Suite</title>
+  <meta name="description" content="What the Self Authoring Suite stores, where, and what the sync service can and cannot read.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="notfound prose">
+    <p class="eyebrow">Privacy</p>
+    <h1>What is stored, and where</h1>
+    <p class="lede">Your answers belong to you. This page says exactly what the suite keeps and what the sync service can read.</p>
+
+    <h2>Without an account</h2>
+    <p>Your answers are saved only in this browser, on this device. Nothing is sent anywhere. Clearing your browser's site data erases them, so export a backup first if you want to keep them.</p>
+
+    <h2>With an account</h2>
+    <p>Your answers are encrypted in your browser before they are sent. The sync service stores:</p>
+    <ul>
+      <li>your email address, to identify your account</li>
+      <li>a salted fingerprint of your password and of your recovery code. It cannot be used to recover either one</li>
+      <li>your data key, encrypted with your password and again with your recovery code</li>
+      <li>your answers, encrypted. The service cannot read them</li>
+      <li>the time of your last sync and the approximate size of your data</li>
+    </ul>
+    <p>The service does not use analytics, advertising, or third-party scripts.</p>
+
+    <h2>What the service cannot do</h2>
+    <ul>
+      <li>read your answers</li>
+      <li>recover a forgotten password</li>
+      <li>recover your answers if you lose both your password and your recovery code</li>
+    </ul>
+
+    <h2>Recovery code</h2>
+    <p>When you create an account you receive a recovery code once. It is the only way back into your answers if you forget your password. Store it in a password manager or somewhere safe. If you lose it and your password, your answers cannot be recovered.</p>
+
+    <h2>Signing out and deleting</h2>
+    <p>Signing out removes your answers from the device and keeps them in your account. Changing your password or recovery code signs out your other devices. Deleting your account removes its encrypted data from the service. This cannot be undone.</p>
+
+    <h2>Shared computers</h2>
+    <p>While you are signed in, this device keeps the key needed to read your answers. Sign out on any computer you do not control.</p>
+
+    <h2>Questions</h2>
+    <p>Open an issue on the project's GitHub page.</p>
+
+    <p><a href="./">Back to the Self Authoring Suite</a></p>
+  </main>
+</body>
+</html>

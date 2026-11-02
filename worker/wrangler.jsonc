@@ -1,0 +1,17 @@
+{
+  // Self Authoring Suite sync API (Cloudflare Worker + D1).
+  // Stores account verifiers and encrypted vaults only. Never plaintext answers.
+  "name": "self-authoring-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "preview_urls": false,
+  "d1_databases": [
+    { "binding": "DB", "database_name": "self-authoring-suite", "database_id": "REPLACE_WITH_D1_DATABASE_ID" }
+  ],
+  "vars": {
+    // Origins allowed to call the API (the GitHub Pages site, plus local testing).
+    "ALLOWED_ORIGINS": "https://alleebauder.github.io,http://localhost:8000,http://127.0.0.1:8000"
+  }
+  // secret, set with: npx wrangler secret put PEPPER
+  //   PEPPER  long random string used to hash account verifiers. Never commit it.
+}
