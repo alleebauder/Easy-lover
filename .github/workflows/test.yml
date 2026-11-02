@@ -23,7 +23,7 @@ jobs:
 
       - name: Install the sync service's tools
         working-directory: worker
-        run: npm i --no-save wrangler@4
+        run: npm ci
 
       - name: Start the sync service locally
         working-directory: worker
