@@ -1,0 +1,53 @@
+name: test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install test browser
+        run: |
+          npm i --no-save playwright@1
+          npx playwright install --with-deps chromium
+
+      - name: Start the sync service locally
+        working-directory: worker
+        env:
+          # Throwaway value for CI only. Never a real secret.
+          CI_PEPPER: ci-only-pepper-not-secret
+        run: |
+          echo "PEPPER=${CI_PEPPER}" > .dev.vars
+          npx --yes wrangler@4 d1 execute self-authoring-suite --local --persist-to .wrangler/state --file=schema.sql
+          nohup npx --yes wrangler@4 dev --local --persist-to .wrangler/state --port 8787 > /tmp/worker.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8787/api/health > /dev/null; then echo "service up"; break; fi
+            sleep 2
+          done
+          curl -sf http://localhost:8787/api/health
+
+      - name: Serve the site
+        run: |
+          nohup python3 -m http.server 8000 > /tmp/site.log 2>&1 &
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:8000/account.js > /dev/null; then echo "site up"; break; fi
+            sleep 1
+          done
+
+      - name: Run end-to-end tests
+        run: node tests/e2e.js
+
+      - name: Show service log on failure
+        if: failure()
+        run: |
+          echo "--- worker log ---"; tail -100 /tmp/worker.log || true

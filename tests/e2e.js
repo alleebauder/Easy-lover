@@ -1,7 +1,8 @@
 // End-to-end test for accounts, sync, recovery, merging, and the modules.
 // Needs: a static server for this repo on port 8000, and the sync Worker on port 8787
 //   (cd worker && npx wrangler dev --local --persist-to .wrangler/state --port 8787).
-// Run with: npm i playwright && node tests/e2e.js
+// Run with: npm i playwright && npx playwright install chromium && node tests/e2e.js
+// CI runs this on every pull request (.github/workflows/test.yml).
 
 const { chromium } = require('playwright');
 const BASE = 'http://localhost:8000/';

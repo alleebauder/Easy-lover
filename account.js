@@ -464,7 +464,8 @@
     main.appendChild(el("header", { class: "page-head" }, [
       el("p", { class: "eyebrow", text: "Account" }),
       el("h1", { text: "Your account" }),
-      el("p", { class: "lede", text: "Keep your answers safe and in sync across devices. Everything is encrypted in your browser before it is sent." })
+      el("p", { class: "lede", text: "Keep your answers safe and in sync across devices. Everything is encrypted in your browser before it is sent." }),
+      el("p", { class: "muted small" }, [el("a", { href: "privacy.html", text: "What the service stores" })])
     ]));
 
     if (!API) {

@@ -547,7 +547,8 @@
 
     main.appendChild(el("div", { class: "privacy card" }, [
       el("h2", { text: "Private by design" }),
-      el("p", { text: "Your answers are encrypted in this browser. Without an account they stay on this device. With an account, only encrypted data is sent, and the service cannot read it. Export a backup before you clear your browser." })
+      el("p", { text: "Your answers are encrypted in this browser. Without an account they stay on this device. With an account, only encrypted data is sent, and the service cannot read it. Export a backup before you clear your browser." }),
+      el("p", {}, [el("a", { href: "privacy.html", text: "Read exactly what is stored, and where" })])
     ]));
     main.appendChild(crisisNote());
   }

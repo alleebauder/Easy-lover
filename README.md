@@ -62,7 +62,9 @@ modules.js    all content: prompts, checklists, tables, and module order
 summaries.js  computed summaries under the table modules
 app.js        engine: storage, navigation, progress, weekly review, export
 worker/       the sync service (Cloudflare Worker + D1)
-tests/        end-to-end test (Playwright)
+tests/        end-to-end test (Playwright); runs on every pull request via .github/workflows/test.yml
+privacy.html  plain-language privacy page
+LICENSE       MIT
 404.html      page for unknown addresses
 SOURCES.md    research behind the structure, with discrepancies noted
 ROADMAP.md    where the project is going
@@ -123,4 +125,4 @@ Ideas, prompt improvements, accessibility fixes, and new modules are welcome. Op
 
 ## License
 
-Not yet chosen. Add a `LICENSE` file before accepting outside contributions.
+MIT. See [LICENSE](LICENSE).
