@@ -74,3 +74,12 @@ Verified across several sources:
 Past and Faults work involve difficult memories and self-criticism. Sources describe
 the faults section as confronting and suggest doing it when you feel steady. The
 suite follows that advice in its module notes and shows a crisis line on every page.
+
+## Guide and examples
+
+- **Pacing (guide):** the four-to-five-hours-per-program figure and the advice to split it over sessions and start rested come from the official program site's description of the suite.
+- **Free-writing (Future):** the 15-to-20-minute free-write comes from the official Future Authoring description.
+- **Where to start:** Past first is common practice. Starting with Faults is an option, presented as a choice, not a requirement.
+- **Heavy material and Faults timing:** advising Faults when you feel steady, and Virtues when low, reflects the caution in the sources about the confronting nature of the Faults exercise. It is our guidance, not an official rule.
+- **Weekly rhythm and monthly witness check-in:** our recommendation. Not from the original program.
+- **Examples:** written for this project to show the level of detail that helps. They are illustrations, not from the original program, and are not templates to copy.

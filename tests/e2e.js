@@ -201,6 +201,16 @@ async function waitSynced(page, since) {
       check('module opens: ' + m, count >= 3, count + ' sections');
     }
 
+    // Guide and examples
+    await A.goto(BASE + '#/guide');
+    await A.waitForSelector('.guide-part');
+    const guideParts = await A.locator('.guide-part').count();
+    check('guide page has its sections', guideParts === 7, guideParts + ' parts');
+    await A.goto(BASE + '#/past');
+    await A.waitForSelector('.example');
+    const examples = await A.locator('.example').count();
+    check('module prompts show examples', examples >= 6, examples + ' examples on Past');
+
     // Sign out removes the local copy but keeps the account
     await E.goto(BASE + '#/account');
     await E.waitForSelector('text=Sign out');
