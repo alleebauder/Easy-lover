@@ -1,0 +1,8 @@
+{
+  "name": "self-authoring-api",
+  "private": true,
+  "description": "Sync service for the Self Authoring Suite (Cloudflare Worker + D1). Dev and deploy tooling only.",
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}
