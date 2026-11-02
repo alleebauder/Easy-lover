@@ -21,6 +21,10 @@ jobs:
           npm i --no-save playwright@1
           npx playwright install --with-deps chromium
 
+      - name: Install the sync service's tools
+        working-directory: worker
+        run: npm i --no-save wrangler@4
+
       - name: Start the sync service locally
         working-directory: worker
         env:
@@ -28,13 +32,15 @@ jobs:
           CI_PEPPER: ci-only-pepper-not-secret
         run: |
           echo "PEPPER=${CI_PEPPER}" > .dev.vars
-          npx --yes wrangler@4 d1 execute self-authoring-suite --local --persist-to .wrangler/state --file=schema.sql
-          nohup npx --yes wrangler@4 dev --local --persist-to .wrangler/state --port 8787 > /tmp/worker.log 2>&1 &
-          for i in $(seq 1 60); do
-            if curl -sf http://localhost:8787/api/health > /dev/null; then echo "service up"; break; fi
+          ./node_modules/.bin/wrangler d1 execute self-authoring-suite --local --persist-to .wrangler/state --file=schema.sql
+          nohup ./node_modules/.bin/wrangler dev --local --persist-to .wrangler/state --port 8787 > /tmp/worker.log 2>&1 &
+          for i in $(seq 1 90); do
+            if curl -sf http://localhost:8787/api/health > /dev/null; then echo "service up"; exit 0; fi
             sleep 2
           done
-          curl -sf http://localhost:8787/api/health
+          echo "service did not start; log follows:"
+          cat /tmp/worker.log
+          exit 1
 
       - name: Serve the site
         run: |
@@ -46,8 +52,3 @@ jobs:
 
       - name: Run end-to-end tests
         run: node tests/e2e.js
-
-      - name: Show service log on failure
-        if: failure()
-        run: |
-          echo "--- worker log ---"; tail -100 /tmp/worker.log || true
